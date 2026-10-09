@@ -1,0 +1,44 @@
+name: Package & Release Gemini Plugin
+
+on:
+  # 手动触发
+  workflow_dispatch:
+  # models/gemini 目录有变更推送到 main 时自动触发
+  push:
+    branches:
+      - main
+    paths:
+      - 'models/gemini/**'
+
+jobs:
+  package-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read plugin version from manifest
+        id: meta
+        run: |
+          version=$(grep -E '^version:' models/gemini/manifest.yaml | head -1 | awk '{print $2}' | tr -d '"')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Packaging gemini plugin version $version"
+
+      - name: Download Dify plugin CLI
+        run: |
+          curl -fsSL -o dify-plugin \
+            https://github.com/langgenius/dify-plugin-daemon/releases/latest/download/dify-plugin-linux-amd64
+          chmod +x dify-plugin
+
+      - name: Package plugin
+        run: ./dify-plugin plugin package models/gemini -o gemini.difypkg
+
+      - name: Create/Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: gemini-${{ steps.meta.outputs.version }}
+          name: Gemini plugin v${{ steps.meta.outputs.version }}
+          files: gemini.difypkg
+          generate_release_notes: true
