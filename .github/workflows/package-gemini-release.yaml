@@ -26,6 +26,9 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Packaging gemini plugin version $version"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
       - name: Download Dify plugin CLI
         run: |
           curl -fsSL -o dify-plugin \
